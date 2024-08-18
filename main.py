@@ -67,7 +67,13 @@ def logout():
 
 @app.route('/download')
 def download():
-    pass
+    # Specify the directory relative to your application's root
+    directory = 'static/files'
+    # Specify the file name
+    filename = 'cheat_sheet.pdf'
+
+    # Serve the file for download
+    return send_from_directory(directory, filename, as_attachment=True)
 
 
 if __name__ == "__main__":
