@@ -53,13 +53,17 @@ def register():
         password_hash = generate_password_hash(password, "pbkdf2", salt_length=8)
 
         new_user = models.User(name=name, email=email, password=password_hash)
+
+        if crud.email_exists(new_user.email):
+            flash('this email has been registered already', 'danger')
         # Add user through CRUD function
-        try:
-            crud.add_user(new_user)
-            return redirect(url_for('secrets'))
-        except Exception as e:
-            flash(f'Error: {e}', 'danger')
-            return redirect(url_for('register'))
+        else:
+            try:
+                crud.add_user(new_user)
+                return redirect(url_for('secrets'))
+            except Exception as e:
+                flash(f'Error: {e}', 'danger')
+                return redirect(url_for('register'))
 
     # If it's a GET request, just render the registration form
     return render_template("register.html")

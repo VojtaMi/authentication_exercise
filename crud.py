@@ -13,3 +13,7 @@ def get_user_by_id(user_id):
 
 def get_user_by_email(email):
     return User.query.filter_by(email=email).first()
+
+
+def email_exists(email):
+    return User.query.filter_by(email=email).first() is not None
