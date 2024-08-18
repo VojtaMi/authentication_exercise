@@ -1,22 +1,41 @@
+import os
 from flask import Flask, render_template, request, url_for, redirect, flash, send_from_directory
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Integer, String
-from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
+import flask_login as fl_log
+from flask_login import login_required
+import dotenv
 
 import models
 from models import db
 import crud
 
+dotenv.load_dotenv()
+
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret-key-goes-here'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 db.init_app(app)
 
+login_manager = fl_log.LoginManager()
+# redirect user to login page when trying to access a content behind authentication
+login_manager.login_view = 'login'  # Redirect to the login page
+login_manager.login_message_category = 'danger'  # Flash category for the message
+
+login_manager.init_app(app)
+
 with app.app_context():
     db.create_all()
+
+
+@app.context_processor
+def inject_user():
+    return {'current_user': fl_log.current_user}
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return crud.get_user_by_id(user_id)
 
 
 @app.route('/')
@@ -38,7 +57,7 @@ def register():
         try:
             crud.add_user(new_user)
             flash('User registered successfully!', 'success')
-            return redirect(url_for('secrets', user_id=new_user.id))
+            return redirect(url_for('secrets'))
         except Exception as e:
             flash(f'Error: {e}', 'danger')
             return redirect(url_for('register'))
@@ -47,21 +66,38 @@ def register():
     return render_template("register.html")
 
 
-@app.route('/login')
+@app.route('/login', methods=['GET', 'POST'])
 def login():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        # Use the CRUD function to get the user by email
+        user = crud.get_user_by_email(email)
+
+        if user and check_password_hash(user.password, password):
+            # Login user
+            fl_log.login_user(user)
+            flash('Logged in successfully!', 'success')
+            return redirect(url_for('secrets'))
+        else:
+            flash('Login failed. Check your email and password.', 'danger')
+
     return render_template("login.html")
 
 
 @app.route('/secrets')
+@login_required
 def secrets():
-    user_id = request.args.get('user_id')  # Get user_id from query parameters
-    user = crud.get_user_by_id(user_id)
-    return render_template("secrets.html", user=user)
+    return render_template("secrets.html", user=fl_log.current_user)
 
 
 @app.route('/logout')
+@login_required
 def logout():
-    pass
+    fl_log.logout_user()
+    flash('You have been logged out.', 'success')
+    return redirect(url_for('login'))
 
 
 @app.route('/download')

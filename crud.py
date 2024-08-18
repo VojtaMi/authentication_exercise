@@ -6,5 +6,10 @@ def add_user(user):
     db.session.add(user)
     db.session.commit()
 
+
 def get_user_by_id(user_id):
-    return User.query.get_or_404(user_id)
+    return User.query.get(user_id)
+
+
+def get_user_by_email(email):
+    return User.query.filter_by(email=email).first()
