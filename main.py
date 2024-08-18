@@ -56,7 +56,6 @@ def register():
         # Add user through CRUD function
         try:
             crud.add_user(new_user)
-            flash('User registered successfully!', 'success')
             return redirect(url_for('secrets'))
         except Exception as e:
             flash(f'Error: {e}', 'danger')
@@ -75,13 +74,14 @@ def login():
         # Use the CRUD function to get the user by email
         user = crud.get_user_by_email(email)
 
-        if user and check_password_hash(user.password, password):
+        if not user:
+            flash("this email is not registered", "danger")
+        elif not check_password_hash(user.password, password):
+            flash("password is incorrect", "danger")
+        else:
             # Login user
             fl_log.login_user(user)
-            flash('Logged in successfully!', 'success')
             return redirect(url_for('secrets'))
-        else:
-            flash('Login failed. Check your email and password.', 'danger')
 
     return render_template("login.html")
 
