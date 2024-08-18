@@ -12,7 +12,6 @@ import crud
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret-key-goes-here'
 
-
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 db.init_app(app)
 
@@ -32,8 +31,9 @@ def register():
         name = request.form.get('name')
         email = request.form.get('email')
         password = request.form.get('password')
+        password_hash = generate_password_hash(password, "pbkdf2", salt_length=8)
 
-        new_user = models.User(name=name, email=email, password=password)
+        new_user = models.User(name=name, email=email, password=password_hash)
         # Add user through CRUD function
         try:
             crud.add_user(new_user)
@@ -57,7 +57,6 @@ def secrets():
     user_id = request.args.get('user_id')  # Get user_id from query parameters
     user = crud.get_user_by_id(user_id)
     return render_template("secrets.html", user=user)
-
 
 
 @app.route('/logout')
